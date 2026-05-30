@@ -1,0 +1,57 @@
+<?php
+/**
+ * Folk server entry point for Symfony (extension mode).
+ *
+ * Main thread: boots Symfony, starts Folk server, enters worker loop.
+ * ZTS worker threads: skip server start (bridge state already initialized).
+ */
+
+declare(strict_types=1);
+
+$autoload = $GLOBALS['_composer_autoload_path']
+    ?? dirname(__DIR__, 4) . '/vendor/autoload.php';
+
+if (!file_exists($autoload)) {
+    fwrite(STDERR, "folk-server: vendor/autoload.php not found.\n");
+    exit(1);
+}
+
+// Set CWD to project root BEFORE autoload (ZTS workers may have wrong CWD)
+chdir(dirname($autoload, 2));
+
+require $autoload;
+
+// Load .env if symfony/dotenv is available
+if (class_exists(\Symfony\Component\Dotenv\Dotenv::class) && file_exists(getcwd() . '/.env')) {
+    (new \Symfony\Component\Dotenv\Dotenv())->bootEnv(getcwd() . '/.env');
+}
+
+$configPath = $argv[1] ?? 'folk.toml';
+
+if (!function_exists('folk_version')) {
+    fwrite(STDERR, "Error: folk extension is not loaded.\n");
+    exit(1);
+}
+
+// ZTS worker threads already have bridge state; skip server start.
+if (!folk_is_worker_thread()) {
+    $server = new Folk\Server($configPath);
+    $server->start();
+}
+
+// Bootstrap Symfony kernel
+$env = $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'prod';
+$debug = (bool) ($_ENV['APP_DEBUG'] ?? $_SERVER['APP_DEBUG'] ?? false);
+$kernel = new App\Kernel($env, $debug);
+
+// Register Folk handlers
+\Folk\Symfony\FolkBootstrap::register($kernel);
+
+// Enter worker loop
+$loop = new \Folk\Sdk\Worker\WorkerLoop();
+
+if (isset($GLOBALS['folk_worker_boot_hook'])) {
+    ($GLOBALS['folk_worker_boot_hook'])($loop);
+}
+
+$loop->run();
