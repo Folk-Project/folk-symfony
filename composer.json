@@ -10,14 +10,18 @@
     ],
     "require": {
         "php": ">=8.2",
-        "folk/sdk": "^0.2.4",
+        "folk/sdk": "^0.2.7",
         "symfony/http-kernel": "^6.4|^7.0|^8.0",
         "symfony/http-foundation": "^6.4|^7.0|^8.0"
     },
     "require-dev": {
         "symfony/framework-bundle": "^6.4|^7.0|^8.0",
+        "monolog/monolog": "^3.0",
         "phpunit/phpunit": "^11.0",
         "phpstan/phpstan": "^2.0"
+    },
+    "suggest": {
+        "monolog/monolog": "Enables request_id correlation in application logs (via symfony/monolog-bundle)"
     },
     "autoload": {
         "psr-4": { "Folk\\Symfony\\": "src/" }
