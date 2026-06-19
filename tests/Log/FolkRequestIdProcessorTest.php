@@ -6,9 +6,9 @@ namespace {
     // Stub the native folk_request_id() exposed by the Folk extension so the
     // processor can be exercised without the extension loaded. Driven by a global.
     if (!\function_exists('folk_request_id')) {
-        function folk_request_id(): int
+        function folk_request_id(): string
         {
-            return (int) ($GLOBALS['__folk_test_request_id'] ?? 0);
+            return (string) ($GLOBALS['__folk_test_request_id'] ?? '');
         }
     }
 }
@@ -34,18 +34,18 @@ namespace Folk\Symfony\Tests\Log {
 
         public function testAddsRequestIdWhenPresent(): void
         {
-            $GLOBALS['__folk_test_request_id'] = 42;
+            $GLOBALS['__folk_test_request_id'] = '017f22e2-79b0-7cc3-98c4-dc0c0c07398f';
 
             $record = (new FolkRequestIdProcessor())($this->record());
 
             self::assertInstanceOf(LogRecord::class, $record);
             self::assertArrayHasKey('request_id', $record->extra);
-            self::assertSame(42, $record->extra['request_id']);
+            self::assertSame('017f22e2-79b0-7cc3-98c4-dc0c0c07398f', $record->extra['request_id']);
         }
 
-        public function testOmitsRequestIdWhenZero(): void
+        public function testOmitsRequestIdWhenEmpty(): void
         {
-            $GLOBALS['__folk_test_request_id'] = 0;
+            $GLOBALS['__folk_test_request_id'] = '';
 
             $record = (new FolkRequestIdProcessor())($this->record());
 
@@ -55,14 +55,14 @@ namespace Folk\Symfony\Tests\Log {
 
         public function testPreservesExistingExtra(): void
         {
-            $GLOBALS['__folk_test_request_id'] = 7;
+            $GLOBALS['__folk_test_request_id'] = '0190aabb-ccdd-7eef-8001-0123456789ab';
 
             $base = $this->record()->with(extra: ['foo' => 'bar']);
             $record = (new FolkRequestIdProcessor())($base);
 
             self::assertInstanceOf(LogRecord::class, $record);
             self::assertSame('bar', $record->extra['foo']);
-            self::assertSame(7, $record->extra['request_id']);
+            self::assertSame('0190aabb-ccdd-7eef-8001-0123456789ab', $record->extra['request_id']);
         }
     }
 }
