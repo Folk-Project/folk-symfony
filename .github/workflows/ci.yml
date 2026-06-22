@@ -9,23 +9,26 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+        env:
+          COMPOSER_MEMORY_LIMIT: -1
 
       - name: PHP syntax check
         run: find src/ -name "*.php" -print0 | xargs -0 -n1 php -l
 
-      # TODO: enable after tests are written
-      # - name: Install Composer dependencies
-      #   run: composer install --prefer-dist --no-progress --no-interaction
-      #   env:
-      #     COMPOSER_MEMORY_LIMIT: -1
+      - name: PHPUnit
+        run: vendor/bin/phpunit --testdox
 
-      # - name: PHPUnit
-      #   run: vendor/bin/phpunit --testdox
-      #   env:
-      #     APP_ENV: testing
-
-      # - name: PHPStan
-      #   run: vendor/bin/phpstan analyse src/ --level=8
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse src/ --level=8
