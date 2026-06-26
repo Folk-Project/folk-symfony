@@ -10,7 +10,7 @@
     ],
     "require": {
         "php": ">=8.2",
-        "folk/sdk": "^0.3.0",
+        "folk/sdk": "^0.3.6",
         "symfony/http-kernel": "^6.4|^7.0|^8.0",
         "symfony/http-foundation": "^6.4|^7.0|^8.0"
     },

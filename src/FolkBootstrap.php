@@ -30,9 +30,16 @@ final class FolkBootstrap
                 }
             }
 
-            // HTTP handler
+            // HTTP handler — streaming size limits from parameters or env.
+            $maxBytes = $container->hasParameter('folk.streaming.max_request_bytes')
+                ? (int) $container->getParameter('folk.streaming.max_request_bytes')
+                : (int) (getenv('FOLK_STREAM_MAX_BYTES') ?: 0);
+            /** @var array<string, int> $pathLimits */
+            $pathLimits = $container->hasParameter('folk.streaming.limits')
+                ? (array) $container->getParameter('folk.streaming.limits')
+                : [];
             $loop->registerHttpHandler(
-                new Handler\SymfonyHttpHandler($kernel),
+                new Handler\SymfonyHttpHandler($kernel, $maxBytes, $pathLimits),
             );
 
             // Jobs handler
@@ -60,6 +67,7 @@ final class FolkBootstrap
 
             // Resetters
             $loop->registerResetter(new Reset\KernelResetter($kernel));
+            $loop->registerResetter(new \Folk\Sdk\Reset\TempUploadResetter());
 
             if ($container->has('doctrine')) {
                 $loop->registerResetter(new Reset\DoctrineResetter($container));
