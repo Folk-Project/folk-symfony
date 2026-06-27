@@ -12,7 +12,7 @@ final class FolkQueue
     /**
      * @param array<string, mixed> $payload
      */
-    public function push(string $queue, string $jobClass, array $payload = []): void
+    public function push(string $queue, string $jobClass, array $payload = [], int $delay = 0): void
     {
         folk_call('jobs.push', \json_encode([
             'queue' => $queue,
@@ -20,6 +20,7 @@ final class FolkQueue
                 'job' => $jobClass,
                 'payload' => $payload,
             ], JSON_THROW_ON_ERROR),
+            'delay' => $delay,
         ], JSON_THROW_ON_ERROR));
     }
 }
