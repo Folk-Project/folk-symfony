@@ -67,7 +67,9 @@ final class SymfonyHttpHandler implements HttpModeHandler
         ?StreamedBody $streamed = null,
         ?string $content = null,
     ): Request {
-        $parameters = $streamed?->post ?? $this->parseFormBody($folkRequest, $content);
+        $parameters = $streamed !== null
+            ? $streamed->post
+            : $this->parseFormBody($folkRequest, $content);
         $files = [];
         if ($streamed !== null) {
             foreach ($streamed->files as $file) {
@@ -132,7 +134,7 @@ final class SymfonyHttpHandler implements HttpModeHandler
      * Parse a urlencoded body into POST parameters (Symfony's Request::create
      * does not). Returns [] for non-form bodies.
      *
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     private function parseFormBody(FolkRequest $folkRequest, ?string $content): array
     {

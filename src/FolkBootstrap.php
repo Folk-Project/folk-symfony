@@ -31,9 +31,10 @@ final class FolkBootstrap
             }
 
             // HTTP handler — streaming size limits from parameters or env.
-            $maxBytes = $container->hasParameter('folk.streaming.max_request_bytes')
-                ? (int) $container->getParameter('folk.streaming.max_request_bytes')
-                : (int) (getenv('FOLK_STREAM_MAX_BYTES') ?: 0);
+            $maxBytesParam = $container->hasParameter('folk.streaming.max_request_bytes')
+                ? $container->getParameter('folk.streaming.max_request_bytes')
+                : (getenv('FOLK_STREAM_MAX_BYTES') ?: 0);
+            $maxBytes = \is_scalar($maxBytesParam) ? (int) $maxBytesParam : 0;
             /** @var array<string, int> $pathLimits */
             $pathLimits = $container->hasParameter('folk.streaming.limits')
                 ? (array) $container->getParameter('folk.streaming.limits')
@@ -42,9 +43,16 @@ final class FolkBootstrap
                 new Handler\SymfonyHttpHandler($kernel, $maxBytes, $pathLimits),
             );
 
-            // Jobs handler
+            // Jobs handler — prefer the native Messenger bridge when the app
+            // wired FolkMessengerJobHandler (Symfony Messenger installed); fall
+            // back to the bespoke container-resolved handler otherwise.
+            $jobsHandler = $container->has(Jobs\FolkMessengerJobHandler::class)
+                ? $container->get(Jobs\FolkMessengerJobHandler::class)
+                : null;
             $loop->registerJobsHandler(
-                new Jobs\SymfonyJobHandler($container),
+                $jobsHandler instanceof Jobs\FolkMessengerJobHandler
+                    ? $jobsHandler
+                    : new Jobs\SymfonyJobHandler($container),
             );
 
             // gRPC handler (if configured via parameters)

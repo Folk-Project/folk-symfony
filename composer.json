@@ -16,12 +16,14 @@
     },
     "require-dev": {
         "symfony/framework-bundle": "^6.4|^7.0|^8.0",
+        "symfony/messenger": "^6.4|^7.0|^8.0",
         "monolog/monolog": "^3.0",
         "phpunit/phpunit": "^11.0",
         "phpstan/phpstan": "^2.0"
     },
     "suggest": {
-        "monolog/monolog": "Enables request_id correlation in application logs (via symfony/monolog-bundle)"
+        "monolog/monolog": "Enables request_id correlation in application logs (via symfony/monolog-bundle)",
+        "symfony/messenger": "Enables the native Folk Messenger transport (folk:// DSN) and consume bridge"
     },
     "autoload": {
         "psr-4": { "Folk\\Symfony\\": "src/" }
