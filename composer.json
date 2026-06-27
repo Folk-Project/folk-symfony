@@ -31,12 +31,6 @@
     "autoload-dev": {
         "psr-4": { "Folk\\Symfony\\Tests\\": "tests/" }
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/Folk-Project/folk-sdk"
-        }
-    ],
     "minimum-stability": "dev",
     "prefer-stable": true,
     "bin": ["bin/folk-server"]
