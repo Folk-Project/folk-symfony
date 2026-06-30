@@ -1,9 +1,9 @@
 <?php
 /**
- * Folk server entry point for Symfony (extension mode).
+ * Folk server entry point for Symfony (extension mode, fork-after-warm).
  *
- * Main thread: boots Symfony, starts Folk server, enters worker loop.
- * ZTS worker threads: skip server start (bridge state already initialized).
+ * Master: boot Symfony once + register handlers, then serveForked() forks N
+ * worker processes (CoW-shared warm interpreter) and supervises them.
  */
 
 declare(strict_types=1);
@@ -16,7 +16,7 @@ if (!file_exists($autoload)) {
     exit(1);
 }
 
-// Set CWD to project root BEFORE autoload (ZTS workers may have wrong CWD)
+// Set CWD to project root before autoload / bootstrap / fork.
 chdir(dirname($autoload, 2));
 
 require $autoload;
@@ -33,13 +33,7 @@ if (!function_exists('folk_version')) {
     exit(1);
 }
 
-// ZTS worker threads already have bridge state; skip server start.
-if (!folk_is_worker_thread()) {
-    $server = new Folk\Server($configPath);
-    $server->start();
-}
-
-// Bootstrap Symfony kernel
+// Bootstrap Symfony kernel once in the master.
 $env = $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'prod';
 $debug = (bool) ($_ENV['APP_DEBUG'] ?? $_SERVER['APP_DEBUG'] ?? false);
 $kernel = new App\Kernel($env, $debug);
@@ -47,11 +41,13 @@ $kernel = new App\Kernel($env, $debug);
 // Register Folk handlers
 \Folk\Symfony\FolkBootstrap::register($kernel);
 
-// Enter worker loop
+// Create the worker loop and register handlers.
 $loop = new \Folk\Sdk\Worker\WorkerLoop();
 
 if (isset($GLOBALS['folk_worker_boot_hook'])) {
     ($GLOBALS['folk_worker_boot_hook'])($loop);
 }
 
-$loop->run();
+// Fork-after-warm: install the dispatch fn, then fork workers + supervise.
+$server = new Folk\Server($configPath);
+$server->serveForked($loop->prepareDispatch());
