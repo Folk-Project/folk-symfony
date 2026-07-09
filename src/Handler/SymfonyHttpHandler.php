@@ -90,6 +90,9 @@ final class SymfonyHttpHandler implements HttpModeHandler
             uri: $folkRequest->uri,
             method: $folkRequest->method,
             parameters: $parameters,
+            // Request::create() does not derive cookies from the Cookie header;
+            // feed them explicitly or sessions/auth break on a warm worker (#86).
+            cookies: \Folk\Sdk\Http\CookieParser::fromHeaders($folkRequest->headers),
             files: $files,
             server: $this->buildServerBag($folkRequest->headers),
             content: $streamed !== null ? null : ($content ?? ''),
@@ -179,13 +182,25 @@ final class SymfonyHttpHandler implements HttpModeHandler
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, string|list<string>>
      */
     private function extractHeaders(Response $response): array
     {
         $headers = [];
         foreach ($response->headers->all() as $name => $values) {
-            $headers[$name] = \implode(', ', $values);
+            // Set-Cookie stays a list — one header per cookie; comma-joining
+            // corrupts cookies and the HTTP plugin emits each entry separately (#86).
+            if (\strcasecmp((string) $name, 'set-cookie') === 0) {
+                $cookies = [];
+                foreach ($values as $cookie) {
+                    if ($cookie !== null) {
+                        $cookies[] = $cookie;
+                    }
+                }
+                $headers[$name] = $cookies;
+            } else {
+                $headers[$name] = \implode(', ', $values);
+            }
         }
 
         return $headers;
