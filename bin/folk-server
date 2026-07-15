@@ -16,6 +16,12 @@ if (!file_exists($autoload)) {
     exit(1);
 }
 
+// Normalize the autoload path: the Composer bin-proxy (vendor/bin/folk-server)
+// sets _composer_autoload_path with a literal ".." (vendor/bin/../autoload.php),
+// which string dirname() does NOT collapse. realpath() expands it so the project
+// root resolves correctly under both the bin-proxy and a direct/symlinked path.
+$autoload = realpath($autoload);
+
 // Set CWD to project root before autoload / bootstrap / fork.
 chdir(dirname($autoload, 2));
 
