@@ -32,6 +32,12 @@ if (class_exists(\Symfony\Component\Dotenv\Dotenv::class) && file_exists(getcwd(
     (new \Symfony\Component\Dotenv\Dotenv())->bootEnv(getcwd() . '/.env');
 }
 
+// gRPC descriptor-export submode (phase 87): `folk-server grpc:descriptors <proto…>`
+// compiles proto → FileDescriptorSet on stdout and exits, WITHOUT booting the
+// framework or forking workers. No-op for any other argv. CWD is already the
+// project root (chdir above), so proto paths resolve relative to it.
+\Folk\Sdk\Grpc\Codegen\DescriptorCli::maybeHandle($argv);
+
 $configPath = $argv[1] ?? 'folk.toml';
 
 if (!function_exists('folk_version')) {
