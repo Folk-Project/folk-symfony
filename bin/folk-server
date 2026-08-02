@@ -25,6 +25,17 @@ $autoload = realpath($autoload);
 // Set CWD to project root before autoload / bootstrap / fork.
 chdir(dirname($autoload, 2));
 
+// on_init lifecycle hooks (phase 97, folk-releases#93): run the [on_init] steps
+// from folk.toml BEFORE the framework is loaded, so commands like
+// `cp -n .env.example .env`, a `composer install` refresh, or `artisan migrate`
+// take effect before the app reads its environment or a listener is bound. With
+// exit_on_error = true (default) a failing step raises + exits non-zero, so a
+// broken environment never receives traffic. Skipped for the `grpc:descriptors`
+// codegen submode (string literal — the class isn't autoloaded yet here).
+if (($argv[1] ?? null) !== 'grpc:descriptors' && function_exists('folk_on_init')) {
+    folk_on_init($argv[1] ?? 'folk.toml');
+}
+
 require $autoload;
 
 // Load .env if symfony/dotenv is available
